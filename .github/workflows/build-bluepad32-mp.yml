@@ -11,6 +11,10 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     
+    # Run the job inside an official ESP-IDF Docker container
+    # This guarantees the toolchain is present and avoids action version issues
+    container: espressif/idf:release-v5.1 
+    
     steps:
       - name: Checkout MicroPython Source
         uses: actions/checkout@v4
@@ -25,26 +29,14 @@ jobs:
           repository: ricardoquesada/bluepad32
           path: bluepad32
 
-      - name: Setup ESP-IDF Toolchain
-        uses: espressif/github-actions/setup-esp-idf@v1.0.2 # Fixed: Use specific version tag
-        with:
-          esp_idf_version: release/v5.1 
-
       - name: Export ESP-IDF Environment
         run: |
-          source $HOME/esp/esp-idf/export.sh
-          echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
-          echo "PATH=$PATH:$HOME/esp/esp-idf/tools" >> $GITHUB_ENV
-
-      - name: Cache ESP-IDF & Build Artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/esp/esp-idf
-            micropython/ports/esp32/build
-          key: esp-idf-${{ runner.os }}-v5.1-micropython-latest
-          restore-keys: |
-            esp-idf-${{ runner.os }}-v5.1-
+          # In the official docker image, we must source the export script 
+          # so idf.py becomes available in our shell environment
+          . $IDF_PATH/export.sh
+          
+          # Optional: Verify the environment is working
+          idf.py --version
 
       - name: Inject Bluepad32 into MicroPython
         run: |
@@ -68,7 +60,6 @@ jobs:
           idf.py set-target esp32
           
           # Build firmware, injecting Bluepad32 via USER_C_MODULES
-          # Note: Ensure the cmake path exactly matches where Bluepad32 stores its config
           idf.py build -DUSER_C_MODULES=../../../../bluepad32/src/micropython.cmake
           
           echo "🚀 Compilation finished!"
