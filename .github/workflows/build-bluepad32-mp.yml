@@ -15,8 +15,7 @@ jobs:
     container: espressif/idf:release-v5.5
     
     steps:
-      # Step 1: Crucial step to checkout your own repository (Nscontrollerespmicro)
-      # This brings your custom micropython.cmake and C/C++ module files into the runner
+      # Step 1: Checkout your own repository (Nscontrollerespmicro)
       - name: Checkout Nscontrollerespmicro Source (This Repo)
         uses: actions/checkout@v4
 
@@ -62,10 +61,8 @@ jobs:
           # Set target to generic ESP32 (supports WROOM)
           idf.py set-target esp32
           
-          # Build firmware, injecting the custom C module from your repository.
-          # Note: If micropython.cmake is in the root of your repository, point directly to $GITHUB_WORKSPACE.
-          # If it is inside a subdirectory, point to $GITHUB_WORKSPACE/your-subdirectory-name.
-          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE
+          # Build firmware, pointing USER_C_MODULES directly to the folder containing micropython.cmake
+          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE/bluepad32/src
           
           echo "🚀 Compilation finished!"
 
