@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch: # Allows you to trigger the build manually from the UI
+  workflow_dispatch: # Allows manual triggering from the GitHub UI
 
 jobs:
   build-firmware:
@@ -26,9 +26,25 @@ jobs:
           path: bluepad32
 
       - name: Setup ESP-IDF Toolchain
-        uses: espressif/github-actions/setup-esp-idf@v1
+        uses: espressif/github-actions/setup-esp-idf@v1.0.2 # Fixed: Use specific version tag
         with:
-          esp_idf_version: release/v5.1 # Adjust version if Bluepad32 requires a specific IDF branch
+          esp_idf_version: release/v5.1 
+
+      - name: Export ESP-IDF Environment
+        run: |
+          source $HOME/esp/esp-idf/export.sh
+          echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/esp/esp-idf/tools" >> $GITHUB_ENV
+
+      - name: Cache ESP-IDF & Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/esp/esp-idf
+            micropython/ports/esp32/build
+          key: esp-idf-${{ runner.os }}-v5.1-micropython-latest
+          restore-keys: |
+            esp-idf-${{ runner.os }}-v5.1-
 
       - name: Inject Bluepad32 into MicroPython
         run: |
@@ -52,7 +68,7 @@ jobs:
           idf.py set-target esp32
           
           # Build firmware, injecting Bluepad32 via USER_C_MODULES
-          # Note: Ensure the path to micropython.cmake matches where Bluepad32 stores its cmake config
+          # Note: Ensure the cmake path exactly matches where Bluepad32 stores its config
           idf.py build -DUSER_C_MODULES=../../../../bluepad32/src/micropython.cmake
           
           echo "🚀 Compilation finished!"
@@ -63,4 +79,3 @@ jobs:
           name: Bluepad32-MicroPython-ESP32-WROOM
           path: micropython/ports/esp32/build/firmware.bin
           retention-days: 7
-
