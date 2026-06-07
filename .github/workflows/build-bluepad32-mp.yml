@@ -12,10 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     
     # Run the job inside an official ESP-IDF Docker container
-    # Upgraded to release-v5.5 to satisfy the >=5.3.0 dependency requirement of latest MicroPython
     container: espressif/idf:release-v5.5
     
     steps:
+      # Step 1: Crucial step to checkout your own repository (Nscontrollerespmicro)
+      # This brings your custom micropython.cmake and C/C++ module files into the runner
+      - name: Checkout Nscontrollerespmicro Source (This Repo)
+        uses: actions/checkout@v4
+
+      # Step 2: Checkout the official MicroPython repository
       - name: Checkout MicroPython Source
         uses: actions/checkout@v4
         with:
@@ -23,6 +28,7 @@ jobs:
           path: micropython
           submodules: true # Essential for fetching MicroPython dependencies
 
+      # Step 3: Checkout Bluepad32 Library (to compile alongside)
       - name: Checkout Bluepad32 Library
         uses: actions/checkout@v4
         with:
@@ -56,8 +62,10 @@ jobs:
           # Set target to generic ESP32 (supports WROOM)
           idf.py set-target esp32
           
-          # Build firmware, injecting Bluepad32 via USER_C_MODULES using absolute path
-          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE/bluepad32/src/micropython.cmake
+          # Build firmware, injecting the custom C module from your repository.
+          # Note: If micropython.cmake is in the root of your repository, point directly to $GITHUB_WORKSPACE.
+          # If it is inside a subdirectory, point to $GITHUB_WORKSPACE/your-subdirectory-name.
+          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE
           
           echo "🚀 Compilation finished!"
 
