@@ -15,11 +15,9 @@ jobs:
     container: espressif/idf:release-v5.5
     
     steps:
-      # Step 1: Checkout your own repository (Nscontrollerespmicro)
       - name: Checkout Nscontrollerespmicro Source (This Repo)
         uses: actions/checkout@v4
 
-      # Step 2: Checkout the official MicroPython repository
       - name: Checkout MicroPython Source
         uses: actions/checkout@v4
         with:
@@ -27,26 +25,17 @@ jobs:
           path: micropython
           submodules: true # Essential for fetching MicroPython dependencies
 
-      # Step 3: Checkout Bluepad32 Library (to compile alongside)
       - name: Checkout Bluepad32 Library
         uses: actions/checkout@v4
         with:
           repository: ricardoquesada/bluepad32
           path: bluepad32
 
-      - name: Inject Bluepad32 into MicroPython
+      - name: Prepare MicroPython mpy-cross
         run: |
           cd micropython
-          # Compile the mpy-cross compiler first (required for building MP modules)
+          # Compile the mpy-cross compiler first (required for building MP)
           make -C mpy-cross 
-          
-          # Create directory for external C modules in the ESP32 port
-          mkdir -p ports/esp32/modules/bluepad32
-          
-          # Copy Bluepad32 source files into the MicroPython tree
-          cp -r ../bluepad32/src/* ports/esp32/modules/bluepad32/
-          
-          echo "✅ Bluepad32 injected successfully."
 
       - name: Compile ESP32 Firmware
         run: |
@@ -61,8 +50,8 @@ jobs:
           # Set target to generic ESP32 (supports WROOM)
           idf.py set-target esp32
           
-          # Build firmware, pointing USER_C_MODULES directly to the folder containing micropython.cmake
-          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE/bluepad32/src
+          # Build firmware, injecting Bluepad32 correctly as an ESP-IDF Component
+          idf.py build -DEXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32
           
           echo "🚀 Compilation finished!"
 
