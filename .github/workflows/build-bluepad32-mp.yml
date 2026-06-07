@@ -1,0 +1,66 @@
+name: Build Bluepad32 MicroPython Firmware
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allows you to trigger the build manually from the UI
+
+jobs:
+  build-firmware:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout MicroPython Source
+        uses: actions/checkout@v4
+        with:
+          repository: micropython/micropython
+          path: micropython
+          submodules: true # Essential for fetching MicroPython dependencies
+
+      - name: Checkout Bluepad32 Library
+        uses: actions/checkout@v4
+        with:
+          repository: ricardoquesada/bluepad32
+          path: bluepad32
+
+      - name: Setup ESP-IDF Toolchain
+        uses: espressif/github-actions/setup-esp-idf@v1
+        with:
+          esp_idf_version: release/v5.1 # Adjust version if Bluepad32 requires a specific IDF branch
+
+      - name: Inject Bluepad32 into MicroPython
+        run: |
+          cd micropython
+          # Compile the mpy-cross compiler first (required for building MP modules)
+          make -C mpy-cross 
+          
+          # Create directory for external C modules in the ESP32 port
+          mkdir -p ports/esp32/modules/bluepad32
+          
+          # Copy Bluepad32 source files into the MicroPython tree
+          cp -r ../bluepad32/src/* ports/esp32/modules/bluepad32/
+          
+          echo "✅ Bluepad32 injected successfully."
+
+      - name: Compile ESP32 Firmware
+        run: |
+          cd micropython/ports/esp32
+          
+          # Set target to generic ESP32 (supports WROOM)
+          idf.py set-target esp32
+          
+          # Build firmware, injecting Bluepad32 via USER_C_MODULES
+          # Note: Ensure the path to micropython.cmake matches where Bluepad32 stores its cmake config
+          idf.py build -DUSER_C_MODULES=../../../../bluepad32/src/micropython.cmake
+          
+          echo "🚀 Compilation finished!"
+
+      - name: Upload Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Bluepad32-MicroPython-ESP32-WROOM
+          path: micropython/ports/esp32/build/firmware.bin
+          retention-days: 7
+
