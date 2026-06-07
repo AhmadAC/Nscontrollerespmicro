@@ -30,6 +30,13 @@ jobs:
         with:
           repository: ricardoquesada/bluepad32
           path: bluepad32
+          submodules: true # CRUCIAL: Required to fetch the 'external/btstack' dependency
+
+      - name: Generate BTStack Component for ESP-IDF
+        run: |
+          cd bluepad32/external/btstack/port/esp32
+          # This script copies the btstack library into bluepad32/src/components/btstack
+          IDF_PATH=$GITHUB_WORKSPACE/bluepad32/src python ./integrate_btstack.py
 
       - name: Prepare MicroPython mpy-cross
         run: |
@@ -38,7 +45,7 @@ jobs:
 
       - name: Compile ESP32 Firmware
         run: |
-          # Source the export script so idf.py is loaded
+          # Source the export script so idf.py is loaded in this shell session
           . $IDF_PATH/export.sh
           
           cd micropython/ports/esp32
@@ -46,11 +53,10 @@ jobs:
           # Set target to generic ESP32
           idf.py set-target esp32
           
-          # Compile! 
-          # - EXTRA_COMPONENT_DIRS compiles the raw Bluepad32 library
-          # - USER_C_MODULES compiles your custom Python bindings
+          # Build firmware.
+          # We point EXTRA_COMPONENT_DIRS strictly to the /src/components/ subfolder!
           idf.py build \
-            -DEXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32 \
+            -DEXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32/src/components \
             -DUSER_C_MODULES=$GITHUB_WORKSPACE/modbluepad32
           
           echo "🚀 Compilation finished!"
