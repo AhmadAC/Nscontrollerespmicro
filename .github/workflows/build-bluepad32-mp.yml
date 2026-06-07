@@ -69,9 +69,13 @@ jobs:
           
           echo "🚀 Compilation finished!"
 
-      - name: Upload Firmware Artifact
+      - name: Upload Firmware Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Bluepad32-MicroPython-ESP32-WROOM
-          path: micropython/ports/esp32/build/firmware.bin
+          # Using wildcards grabs all generated binaries, preventing missing file errors
+          path: |
+            micropython/ports/esp32/build/*.bin
+            micropython/ports/esp32/build/bootloader/*.bin
+            micropython/ports/esp32/build/partition_table/*.bin
           retention-days: 7
