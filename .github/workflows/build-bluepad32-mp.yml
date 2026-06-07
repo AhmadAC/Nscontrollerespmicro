@@ -30,13 +30,19 @@ jobs:
         with:
           repository: ricardoquesada/bluepad32
           path: bluepad32
-          submodules: true # CRUCIAL: Required to fetch the 'external/btstack' dependency
+          submodules: true
 
       - name: Generate BTStack Component for ESP-IDF
         run: |
           cd bluepad32/external/btstack/port/esp32
           # This script copies the btstack library into bluepad32/src/components/btstack
           IDF_PATH=$GITHUB_WORKSPACE/bluepad32/src python ./integrate_btstack.py
+
+      - name: Relax Compiler Strictness
+        run: |
+          # MicroPython enforces -Werror=all, causing strict GCC 14.2 warnings in BTStack to fail the build.
+          # This removes -Werror=all from MicroPython's CMake configuration so warnings remain just warnings.
+          find micropython -type f -name "*.cmake" -o -name "CMakeLists.txt" | xargs sed -i 's/-Werror=all//g'
 
       - name: Prepare MicroPython mpy-cross
         run: |
