@@ -29,15 +29,6 @@ jobs:
           repository: ricardoquesada/bluepad32
           path: bluepad32
 
-      - name: Export ESP-IDF Environment
-        run: |
-          # In the official docker image, we must source the export script 
-          # so idf.py becomes available in our shell environment
-          . $IDF_PATH/export.sh
-          
-          # Optional: Verify the environment is working
-          idf.py --version
-
       - name: Inject Bluepad32 into MicroPython
         run: |
           cd micropython
@@ -54,13 +45,19 @@ jobs:
 
       - name: Compile ESP32 Firmware
         run: |
+          # Source the export script in this shell session so idf.py is active here
+          . $IDF_PATH/export.sh
+          
+          # Verify the environment is working
+          idf.py --version
+          
           cd micropython/ports/esp32
           
           # Set target to generic ESP32 (supports WROOM)
           idf.py set-target esp32
           
-          # Build firmware, injecting Bluepad32 via USER_C_MODULES
-          idf.py build -DUSER_C_MODULES=../../../../bluepad32/src/micropython.cmake
+          # Build firmware, injecting Bluepad32 using the absolute path to the workspace
+          idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE/bluepad32/src/micropython.cmake
           
           echo "🚀 Compilation finished!"
 
