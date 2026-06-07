@@ -38,11 +38,14 @@ jobs:
           # This script copies the btstack library into bluepad32/src/components/btstack
           IDF_PATH=$GITHUB_WORKSPACE/bluepad32/src python ./integrate_btstack.py
 
-      - name: Relax Compiler Strictness
+      - name: Fix BTStack Strict Compiler Warnings
         run: |
-          # MicroPython enforces -Werror=all, causing strict GCC 14.2 warnings in BTStack to fail the build.
-          # This removes -Werror=all from MicroPython's CMake configuration so warnings remain just warnings.
-          find micropython -type f -name "*.cmake" -o -name "CMakeLists.txt" | xargs sed -i 's/-Werror=all//g'
+          # 1. GCC 14.2 flags 'uuid' in avdtp.c as maybe-uninitialized. 
+          # We manually initialize it to 0 to satisfy the strict compiler rules.
+          sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/src/components/btstack/src/classic/avdtp.c
+          
+          # 2. Append a directive to BTStack's CMake file to prevent any other minor warnings from failing the build
+          echo "component_compile_options(-Wno-error)" >> bluepad32/src/components/btstack/CMakeLists.txt
 
       - name: Prepare MicroPython mpy-cross
         run: |
@@ -59,8 +62,7 @@ jobs:
           # Set target to generic ESP32
           idf.py set-target esp32
           
-          # Build firmware.
-          # We point EXTRA_COMPONENT_DIRS strictly to the /src/components/ subfolder!
+          # Build firmware
           idf.py build \
             -DEXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32/src/components \
             -DUSER_C_MODULES=$GITHUB_WORKSPACE/modbluepad32
