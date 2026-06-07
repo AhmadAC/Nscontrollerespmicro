@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     
     # Run the job inside an official ESP-IDF Docker container
-    # This guarantees the toolchain is present and avoids action version issues
-    container: espressif/idf:release-v5.1 
+    # Upgraded to release-v5.5 to satisfy the >=5.3.0 dependency requirement of latest MicroPython
+    container: espressif/idf:release-v5.5
     
     steps:
       - name: Checkout MicroPython Source
@@ -45,7 +45,7 @@ jobs:
 
       - name: Compile ESP32 Firmware
         run: |
-          # Source the export script in this shell session so idf.py is active here
+          # Source the export script so idf.py is loaded in this shell session
           . $IDF_PATH/export.sh
           
           # Verify the environment is working
@@ -56,7 +56,7 @@ jobs:
           # Set target to generic ESP32 (supports WROOM)
           idf.py set-target esp32
           
-          # Build firmware, injecting Bluepad32 using the absolute path to the workspace
+          # Build firmware, injecting Bluepad32 via USER_C_MODULES using absolute path
           idf.py build -DUSER_C_MODULES=$GITHUB_WORKSPACE/bluepad32/src/micropython.cmake
           
           echo "🚀 Compilation finished!"
