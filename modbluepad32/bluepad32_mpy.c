@@ -64,17 +64,18 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     }
 }
 
+// Global struct to guarantee memory persistence across the entire lifecycle
+static struct uni_platform my_custom_platform = {0};
+
 // Register callbacks
 static struct uni_platform* get_my_platform(void) {
-    // Missing callbacks will safely default to NULL
-    static struct uni_platform plat = {0};
-    plat.name = "MicroPython";
-    plat.on_init_complete = my_platform_on_init_complete;
-    plat.on_device_connected = my_platform_on_device_connected;
-    plat.on_device_disconnected = my_platform_on_device_disconnected;
-    plat.on_device_ready = my_platform_on_device_ready;
-    plat.on_controller_data = my_platform_on_controller_data;
-    return &plat;
+    my_custom_platform.name = "MicroPython";
+    my_custom_platform.on_init_complete = my_platform_on_init_complete;
+    my_custom_platform.on_device_connected = my_platform_on_device_connected;
+    my_custom_platform.on_device_disconnected = my_platform_on_device_disconnected;
+    my_custom_platform.on_device_ready = my_platform_on_device_ready;
+    my_custom_platform.on_controller_data = my_platform_on_controller_data;
+    return &my_custom_platform;
 }
 
 // Background task to run Bluetooth quietly
@@ -100,8 +101,9 @@ static void bluepad32_task(void *pvParameters) {
 static mp_obj_t bp32_start(void) {
 #ifndef NO_QSTR
     if (bp32_task_handle == NULL) {
-        // Pin BTStack to Core 0 (PRO_CPU) to avoid interfering with MicroPython on Core 1
-        xTaskCreatePinnedToCore(bluepad32_task, "bluepad32_task", 8192, NULL, 5, &bp32_task_handle, 0);
+        // Increase stack size to 16KB to prevent Stack Overflows (which overwrite the return address causing PC=0x00000000 crashes)
+        // Pin BTStack to Core 0 (PRO_CPU) to isolate it from MicroPython running on Core 1
+        xTaskCreatePinnedToCore(bluepad32_task, "bluepad32_task", 16384, NULL, 5, &bp32_task_handle, 0);
         return mp_const_true;
     }
 #endif
