@@ -33,10 +33,25 @@ jobs:
           path: bluepad32
           submodules: true
 
-      - name: Fix BTStack Strict Compiler Warnings
+      - name: Fix BTStack Warnings & Inject Configuration
         run: |
           sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/external/btstack/src/classic/avdtp.c
           echo "component_compile_options(-Wno-error)" >> bluepad32/external/btstack/port/esp32/components/btstack/CMakeLists.txt
+          
+          # Inject btstack_config.h into the main btstack src directory so it is globally available to QSTR and ESP-IDF
+          BTSTACK_CONF=$(find bluepad32 -name "btstack_config.h" | grep -i esp32 | head -n 1)
+          if [ -z "$BTSTACK_CONF" ]; then
+            # Fallback if grep esp32 fails
+            BTSTACK_CONF=$(find bluepad32 -name "btstack_config.h" | head -n 1)
+          fi
+          
+          if [ -n "$BTSTACK_CONF" ]; then
+            echo "Copying btstack_config.h from $BTSTACK_CONF"
+            cp "$BTSTACK_CONF" bluepad32/external/btstack/src/
+          else
+            echo "Error: Could not find any btstack_config.h!"
+            exit 1
+          fi
 
       - name: Configure MicroPython to Use Bluepad32 (Disable NimBLE)
         run: |
