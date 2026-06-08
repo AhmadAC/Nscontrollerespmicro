@@ -11,7 +11,7 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     
-    # Reverted to v5.0.4 to use cached runner resources and avoid Docker registry timeouts.
+    # Reverted to v5.0.4 to utilize runner cache and avoid Docker Hub registry timeouts.
     # Compatibility with v5.0.4 is maintained via the 'Adapt Bluepad32 CMake' step below.
     container: espressif/idf:v5.0.4
     
@@ -39,11 +39,19 @@ jobs:
           # Replace 'esp_driver_gpio' (introduced in ESP-IDF v5.3) with 'driver' for compatibility with v5.0.4
           find bluepad32 -name "CMakeLists.txt" -type f -exec sed -i 's/esp_driver_gpio/driver/g' {} +
 
+      - name: Integrate BTStack into Bluepad32 Source Components
+        run: |
+          # Run the official integration script to copy and build the BTstack component correctly
+          cd bluepad32/external/btstack/port/esp32
+          IDF_PATH=../../../../src python3 ./integrate_btstack.py
+
       - name: Fix BTStack Warnings & Inject Configuration
         run: |
           sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/external/btstack/src/classic/avdtp.c
-          echo "component_compile_options(-Wno-error)" >> bluepad32/external/btstack/port/esp32/components/btstack/CMakeLists.txt
           
+          # We apply compile options to the newly integrated btstack component to prevent -Werror failures
+          echo "component_compile_options(-Wno-error)" >> bluepad32/src/components/btstack/CMakeLists.txt
+
           # Inject btstack_config.h into the main btstack src directory so it is globally available to QSTR and ESP-IDF
           BTSTACK_CONF=$(find bluepad32 -name "btstack_config.h" | grep -i esp32 | head -n 1)
           if [ -z "$BTSTACK_CONF" ]; then
@@ -78,7 +86,8 @@ jobs:
           EOF
           
           # 3. Force ESP-IDF to discover AND link Bluepad32 and BTStack
-          sed -i "2i list(APPEND EXTRA_COMPONENT_DIRS \"$GITHUB_WORKSPACE/bluepad32/src/components\" \"$GITHUB_WORKSPACE/bluepad32/external/btstack/port/esp32/components\")" micropython/ports/esp32/CMakeLists.txt
+          # Now both bluepad32 and the integrated btstack reside in "$GITHUB_WORKSPACE/bluepad32/src/components"
+          sed -i "2i list(APPEND EXTRA_COMPONENT_DIRS \"$GITHUB_WORKSPACE/bluepad32/src/components\")" micropython/ports/esp32/CMakeLists.txt
           sed -i 's/REQUIRES/REQUIRES bluepad32 btstack /g' micropython/ports/esp32/main_esp32/CMakeLists.txt
 
       - name: Prepare MicroPython mpy-cross

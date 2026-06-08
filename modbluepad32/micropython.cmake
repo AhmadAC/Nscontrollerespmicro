@@ -13,6 +13,7 @@ set(BLUEPAD32_INCLUDES
     $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include/platform
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/src
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/port/esp32/components/btstack/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/btstack/include
 )
 
 # Optional 3rd-party BTStack Includes (added only if they exist to prevent CMake errors)
