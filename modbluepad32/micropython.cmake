@@ -5,14 +5,11 @@ add_library(usermod_bluepad32 INTERFACE)
 file(GLOB USERMOD_SOURCES ${CMAKE_CURRENT_LIST_DIR}/*.c)
 target_sources(usermod_bluepad32 INTERFACE ${USERMOD_SOURCES})
 
-# Explicitly include the Bluepad32 AND BTStack header directories
+# Explicitly include the Bluepad32 and native BTStack header directories
 target_include_directories(usermod_bluepad32 INTERFACE 
     ${CMAKE_CURRENT_LIST_DIR}
-    $ENV{EXTRA_COMPONENT_DIRS}/bluepad32/include
-    $ENV{EXTRA_COMPONENT_DIRS}/btstack/src
-    $ENV{EXTRA_COMPONENT_DIRS}/btstack/platform/embedded
-    $ENV{EXTRA_COMPONENT_DIRS}/btstack/platform/freertos
-    $ENV{EXTRA_COMPONENT_DIRS}/btstack/port/esp32
+    $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/src
 )
 
 # Link the user module to MicroPython
