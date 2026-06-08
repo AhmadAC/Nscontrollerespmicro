@@ -121,5 +121,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Bluepad32-MicroPython-ESP32-WROOM
-          path: micropython/ports/esp32/build-ESP32_GENERIC/firmware.bin
+          path: |
+            micropython/ports/esp32/build-ESP32_GENERIC/*.bin
+            micropython/ports/esp32/build-ESP32_GENERIC/bootloader/*.bin
+            micropython/ports/esp32/build-ESP32_GENERIC/partition_table/*.bin
           retention-days: 7
