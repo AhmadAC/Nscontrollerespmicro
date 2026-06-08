@@ -14,25 +14,30 @@
 #include "platform/uni_platform.h"
 #include "btstack_port_esp32.h"
 #include "btstack_run_loop.h"
+#endif
+
+// Provide dummy types for the QSTR parser since we hid the actual includes
+#ifdef NO_QSTR
+typedef struct { int dpad, buttons, axis_x, axis_y, axis_rx, axis_ry; } uni_gamepad_t;
+typedef void uni_hid_device_t;
+typedef struct { int klass; uni_gamepad_t gamepad; } uni_controller_t;
+typedef int uni_error_t;
+struct uni_platform { const char* name; };
+#define UNI_ERROR_SUCCESS 0
+#define UNI_CONTROLLER_CLASS_GAMEPAD 1
+typedef void* TaskHandle_t;
+#endif
 
 // Global variables to hold gamepad state
 static uni_gamepad_t current_gamepad = {0};
 static bool is_connected = false;
 static TaskHandle_t bp32_task_handle = NULL;
 
+#ifndef NO_QSTR
 // --- Bluepad32 Platform Callbacks ---
-static void my_platform_init(int argc, const char** argv) {
-    (void)argc;
-    (void)argv;
-}
-
 static void my_platform_on_init_complete(void) {
     // Start scanning for controllers once Bluetooth boots up
     uni_bt_enable_new_connections_unsafe(true);
-}
-
-static void my_platform_on_device_discovered(uni_hid_device_t* d) {
-    (void)d;
 }
 
 static void my_platform_on_device_connected(uni_hid_device_t* d) {
@@ -51,11 +56,6 @@ static uni_error_t my_platform_on_device_ready(uni_hid_device_t* d) {
     return UNI_ERROR_SUCCESS;
 }
 
-static void my_platform_on_oob_event(uni_platform_oob_event_t event, void* data) {
-    (void)event;
-    (void)data;
-}
-
 static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t* ctl) {
     (void)d;
     // Update global gamepad state when data arrives
@@ -64,43 +64,34 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     }
 }
 
-static int32_t my_platform_get_property(uni_platform_property_t key) {
-    (void)key;
-    return -1;
-}
-
 // Register callbacks
 static struct uni_platform* get_my_platform(void) {
+    // Missing callbacks will safely default to NULL
     static struct uni_platform plat = {0};
     plat.name = "MicroPython";
-    plat.init = my_platform_init;
     plat.on_init_complete = my_platform_on_init_complete;
-    plat.on_device_discovered = my_platform_on_device_discovered;
     plat.on_device_connected = my_platform_on_device_connected;
     plat.on_device_disconnected = my_platform_on_device_disconnected;
     plat.on_device_ready = my_platform_on_device_ready;
-    plat.on_oob_event = my_platform_on_oob_event;
     plat.on_controller_data = my_platform_on_controller_data;
-    plat.get_property = my_platform_get_property;
     return &plat;
 }
 
 // Background task to run Bluetooth quietly
 static void bluepad32_task(void *pvParameters) {
     (void)pvParameters;
-    btstack_init();
+    
+    // Register our custom platform callbacks
     uni_platform_set_custom(get_my_platform());
+    
+    // Initialize Bluepad32 (this configures the ESP32 BT hardware and calls btstack_init)
     uni_init(0, NULL);
-    btstack_run_loop_execute(); // Loops forever
+    
+    // Hand over this thread to the BTStack run loop (loops forever)
+    btstack_run_loop_execute();
+    
     vTaskDelete(NULL);
 }
-#else
-// Provide dummy types for the QSTR parser so it doesn't fail when external headers are hidden
-typedef void* TaskHandle_t;
-static TaskHandle_t bp32_task_handle = NULL;
-static bool is_connected = false;
-typedef struct { int dpad, buttons, axis_x, axis_y, axis_rx, axis_ry; } uni_gamepad_t;
-static uni_gamepad_t current_gamepad = {0};
 #endif // NO_QSTR
 
 // --- MicroPython Exposed Functions ---
@@ -109,7 +100,8 @@ static uni_gamepad_t current_gamepad = {0};
 static mp_obj_t bp32_start(void) {
 #ifndef NO_QSTR
     if (bp32_task_handle == NULL) {
-        xTaskCreate(bluepad32_task, "bluepad32_task", 4096, NULL, 5, &bp32_task_handle);
+        // Pin BTStack to Core 0 (PRO_CPU) to avoid interfering with MicroPython on Core 1
+        xTaskCreatePinnedToCore(bluepad32_task, "bluepad32_task", 8192, NULL, 5, &bp32_task_handle, 0);
         return mp_const_true;
     }
 #endif
