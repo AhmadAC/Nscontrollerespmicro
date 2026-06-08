@@ -40,5 +40,8 @@ endforeach()
 # Explicitly apply the valid include directories to the module
 target_include_directories(usermod_bluepad32 INTERFACE ${BLUEPAD32_INCLUDES})
 
+# Link the user module against the ESP-IDF components so they are passed to the linker
+target_link_libraries(usermod_bluepad32 INTERFACE idf::bluepad32 idf::btstack)
+
 # Link the user module to MicroPython
 target_link_libraries(usermod INTERFACE usermod_bluepad32)

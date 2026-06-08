@@ -71,8 +71,9 @@ jobs:
           CONFIG_BT_BTU_TASK_STACK_SIZE=8192
           EOF
           
-          # 3. Force ESP-IDF to compile and link Bluepad32 and BTStack
-          sed -i 's/REQUIRES/REQUIRES bluepad32 btstack /g' micropython/ports/esp32/main_esp32/CMakeLists.txt
+          # 3. Force ESP-IDF to discover Bluepad32 and BTStack
+          # We inject EXTRA_COMPONENT_DIRS directly into CMakeLists.txt to guarantee discovery
+          sed -i "2i list(APPEND EXTRA_COMPONENT_DIRS \"$GITHUB_WORKSPACE/bluepad32/src/components\" \"$GITHUB_WORKSPACE/bluepad32/external/btstack/port/esp32/components\")" micropython/ports/esp32/CMakeLists.txt
 
       - name: Prepare MicroPython mpy-cross
         run: |
@@ -85,11 +86,9 @@ jobs:
           
           make BOARD=ESP32_GENERIC submodules
           
-          # BYPASS BUGGY PYTHON SCRIPT: Directly target the native component folders
-          export EXTRA_COMPONENT_DIRS="$GITHUB_WORKSPACE/bluepad32/src/components $GITHUB_WORKSPACE/bluepad32/external/btstack/port/esp32/components"
           export USER_C_MODULES=$GITHUB_WORKSPACE/modbluepad32/micropython.cmake
           
-          make BOARD=ESP32_GENERIC USER_C_MODULES=$USER_C_MODULES EXTRA_COMPONENT_DIRS="$EXTRA_COMPONENT_DIRS"
+          make BOARD=ESP32_GENERIC USER_C_MODULES=$USER_C_MODULES
           
           echo "🚀 Compilation finished!"
 
