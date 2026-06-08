@@ -11,7 +11,7 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     
-    # 🔴 FIX 1: Use the exact ESP-IDF version supported by MicroPython v1.23
+    # Use the exact ESP-IDF version supported by MicroPython v1.23
     container: espressif/idf:v5.0.4
     
     steps:
@@ -22,7 +22,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: micropython/micropython
-          # 🔴 FIX 2: Pin to a stable release so your workflow doesn't randomly break 
           ref: v1.23.0
           path: micropython
           submodules: true
@@ -46,11 +45,11 @@ jobs:
 
       - name: Configure MicroPython to Use Bluepad32 (Disable NimBLE)
         run: |
-          # 🔴 FIX 3: Disable native MicroPython Bluetooth to prevent hardware conflict
+          # 1. Disable native MicroPython Bluetooth to prevent hardware conflict
           echo "#undef MICROPY_PY_BLUETOOTH" >> micropython/ports/esp32/boards/ESP32_GENERIC/mpconfigboard.h
           echo "#define MICROPY_PY_BLUETOOTH (0)" >> micropython/ports/esp32/boards/ESP32_GENERIC/mpconfigboard.h
           
-          # Inject Bluepad32 / BTStack config requirements
+          # 2. Inject Bluepad32 / BTStack config requirements
           cat <<EOF >> micropython/ports/esp32/boards/ESP32_GENERIC/sdkconfig.board
           
           CONFIG_BT_NIMBLE_ENABLED=n
@@ -61,6 +60,9 @@ jobs:
           CONFIG_ESP32_WIFI_AMPDU_TX_ENABLED=n
           CONFIG_BT_BTU_TASK_STACK_SIZE=8192
           EOF
+          
+          # 3. Safely link Bluepad32 and BTStack to MicroPython's main core
+          sed -i 's/set(COMPONENT_REQUIRES/set(COMPONENT_REQUIRES bluepad32 btstack /g' micropython/ports/esp32/main_esp32/CMakeLists.txt
 
       - name: Prepare MicroPython mpy-cross
         run: |
@@ -71,7 +73,6 @@ jobs:
           . $IDF_PATH/export.sh
           cd micropython/ports/esp32
           
-          # 🔴 FIX 4: Use MicroPython's 'make' wrapper instead of idf.py directly
           make BOARD=ESP32_GENERIC submodules
           
           export EXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32/src/components
@@ -85,7 +86,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Bluepad32-MicroPython-ESP32-WROOM
-          # 🔴 FIX 5: Output paths must match the Board name
           path: |
             micropython/ports/esp32/build-ESP32_GENERIC/*.bin
             micropython/ports/esp32/build-ESP32_GENERIC/bootloader/*.bin
