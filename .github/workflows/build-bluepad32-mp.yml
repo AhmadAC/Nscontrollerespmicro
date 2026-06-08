@@ -33,15 +33,10 @@ jobs:
           path: bluepad32
           submodules: true
 
-      - name: Generate BTStack Component for ESP-IDF
-        run: |
-          cd bluepad32/external/btstack/port/esp32
-          IDF_PATH=$GITHUB_WORKSPACE/bluepad32/src python ./integrate_btstack.py
-
       - name: Fix BTStack Strict Compiler Warnings
         run: |
-          sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/src/components/btstack/src/classic/avdtp.c
-          echo "component_compile_options(-Wno-error)" >> bluepad32/src/components/btstack/CMakeLists.txt
+          sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/external/btstack/src/classic/avdtp.c
+          echo "component_compile_options(-Wno-error)" >> bluepad32/external/btstack/port/esp32/components/btstack/CMakeLists.txt
 
       - name: Configure MicroPython to Use Bluepad32 (Disable NimBLE)
         run: |
@@ -61,7 +56,7 @@ jobs:
           CONFIG_BT_BTU_TASK_STACK_SIZE=8192
           EOF
           
-          # 3. CRITICAL FIX: Force ESP-IDF to compile and link Bluepad32 and BTStack
+          # 3. Force ESP-IDF to compile and link Bluepad32 and BTStack
           sed -i 's/REQUIRES/REQUIRES bluepad32 btstack /g' micropython/ports/esp32/main_esp32/CMakeLists.txt
 
       - name: Prepare MicroPython mpy-cross
@@ -75,10 +70,11 @@ jobs:
           
           make BOARD=ESP32_GENERIC submodules
           
-          export EXTRA_COMPONENT_DIRS=$GITHUB_WORKSPACE/bluepad32/src/components
+          # BYPASS BUGGY PYTHON SCRIPT: Directly target the native component folders
+          export EXTRA_COMPONENT_DIRS="$GITHUB_WORKSPACE/bluepad32/src/components $GITHUB_WORKSPACE/bluepad32/external/btstack/port/esp32/components"
           export USER_C_MODULES=$GITHUB_WORKSPACE/modbluepad32/micropython.cmake
           
-          make BOARD=ESP32_GENERIC USER_C_MODULES=$USER_C_MODULES EXTRA_COMPONENT_DIRS=$EXTRA_COMPONENT_DIRS
+          make BOARD=ESP32_GENERIC USER_C_MODULES=$USER_C_MODULES EXTRA_COMPONENT_DIRS="$EXTRA_COMPONENT_DIRS"
           
           echo "🚀 Compilation finished!"
 
