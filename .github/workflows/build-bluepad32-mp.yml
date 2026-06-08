@@ -47,7 +47,8 @@ jobs:
 
       - name: Fix BTStack Warnings & Inject Configuration
         run: |
-          sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' bluepad32/external/btstack/src/classic/avdtp.c
+          # Apply the uuid uninitialized fix to any avdtp.c file (both raw external and integrated copies)
+          find bluepad32 -name "avdtp.c" -exec sed -i 's/uint16_t uuid;/uint16_t uuid = 0;/g' {} +
           
           # We apply compile options to the newly integrated btstack component to prevent -Werror failures
           echo "component_compile_options(-Wno-error)" >> bluepad32/src/components/btstack/CMakeLists.txt
@@ -61,7 +62,9 @@ jobs:
           
           if [ -n "$BTSTACK_CONF" ]; then
             echo "Copying btstack_config.h from $BTSTACK_CONF"
+            # Copy to both external and integrated src/components/ to ensure everything resolves it
             cp "$BTSTACK_CONF" bluepad32/external/btstack/src/
+            cp "$BTSTACK_CONF" bluepad32/src/components/btstack/src/
           else
             echo "Error: Could not find any btstack_config.h!"
             exit 1
