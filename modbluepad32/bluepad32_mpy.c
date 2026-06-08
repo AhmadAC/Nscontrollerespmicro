@@ -11,7 +11,7 @@
 
 // Bluepad32 headers
 #include "uni.h"
-#include "uni_platform.h"
+#include "platform/uni_platform.h"
 #include "btstack_port_esp32.h"
 #include "btstack_run_loop.h"
 #endif

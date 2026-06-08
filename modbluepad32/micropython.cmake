@@ -10,6 +10,7 @@ set(BLUEPAD32_INCLUDES
     ${CMAKE_CURRENT_LIST_DIR}
     $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32
     $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include/platform
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/src
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/port/esp32/components/btstack/include
 )
