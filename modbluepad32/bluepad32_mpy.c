@@ -3,6 +3,9 @@
 
 #include <stdio.h>
 #include <string.h>
+
+// Protect the MicroPython string generator from parsing complex external ESP-IDF/BTStack libraries
+#ifndef NO_QSTR
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -11,6 +14,26 @@
 #include "uni_platform.h"
 #include "btstack_port_esp32.h"
 #include "btstack_run_loop.h"
+#endif
+
+// Provide dummy types for the QSTR parser since we hid the actual includes
+#ifdef NO_QSTR
+typedef struct { int dpad, buttons, axis_x, axis_y, axis_rx, axis_ry; } uni_gamepad_t;
+typedef void uni_hid_device_t;
+typedef struct { int klass; uni_gamepad_t gamepad; } uni_controller_t;
+typedef int uni_error_t;
+typedef struct { 
+    const char* name; 
+    void (*on_init_complete)(void); 
+    void (*on_device_connected)(uni_hid_device_t*); 
+    void (*on_device_disconnected)(uni_hid_device_t*); 
+    uni_error_t (*on_device_ready)(uni_hid_device_t*); 
+    void (*on_controller_data)(uni_hid_device_t*, uni_controller_t*); 
+} uni_platform_t;
+#define UNI_ERROR_SUCCESS 0
+#define UNI_CONTROLLER_CLASS_GAMEPAD 1
+typedef void* TaskHandle_t;
+#endif
 
 // Global variables to hold gamepad state
 static uni_gamepad_t current_gamepad = {0};

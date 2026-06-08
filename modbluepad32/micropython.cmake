@@ -12,6 +12,12 @@ target_include_directories(usermod_bluepad32 INTERFACE
     $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/src
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/port/esp32/components/btstack/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/bluedroid/encoder/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/bluedroid/decoder/include
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/micro-ecc
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/mdns
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/yxml
+    $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party/rijndael
 )
 
 # Link the user module to MicroPython
