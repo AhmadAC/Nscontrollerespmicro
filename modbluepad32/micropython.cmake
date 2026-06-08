@@ -5,9 +5,10 @@ add_library(usermod_bluepad32 INTERFACE)
 file(GLOB USERMOD_SOURCES ${CMAKE_CURRENT_LIST_DIR}/*.c)
 target_sources(usermod_bluepad32 INTERFACE ${USERMOD_SOURCES})
 
-# Explicitly include the Bluepad32 and native BTStack header directories
+# Explicitly include the Bluepad32 component directories and BTStack
 target_include_directories(usermod_bluepad32 INTERFACE 
     ${CMAKE_CURRENT_LIST_DIR}
+    $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32
     $ENV{GITHUB_WORKSPACE}/bluepad32/src/components/bluepad32/include
     $ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/src
 )
