@@ -22,14 +22,14 @@ typedef struct { int dpad, buttons, axis_x, axis_y, axis_rx, axis_ry; } uni_game
 typedef void uni_hid_device_t;
 typedef struct { int klass; uni_gamepad_t gamepad; } uni_controller_t;
 typedef int uni_error_t;
-typedef struct { 
+struct uni_platform { 
     const char* name; 
     void (*on_init_complete)(void); 
     void (*on_device_connected)(uni_hid_device_t*); 
     void (*on_device_disconnected)(uni_hid_device_t*); 
     uni_error_t (*on_device_ready)(uni_hid_device_t*); 
     void (*on_controller_data)(uni_hid_device_t*, uni_controller_t*); 
-} uni_platform_t;
+};
 #define UNI_ERROR_SUCCESS 0
 #define UNI_CONTROLLER_CLASS_GAMEPAD 1
 typedef void* TaskHandle_t;
@@ -67,8 +67,8 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
 }
 
 // Register callbacks
-static const uni_platform_t* get_my_platform(void) {
-    static uni_platform_t plat = {0};
+static struct uni_platform* get_my_platform(void) {
+    static struct uni_platform plat = {0};
     plat.name = "MicroPython";
     plat.on_init_complete = my_platform_on_init_complete;
     plat.on_device_connected = my_platform_on_device_connected;
@@ -90,17 +90,17 @@ static void bluepad32_task(void *pvParameters) {
 // --- MicroPython Exposed Functions ---
 
 // Python: bluepad32.start()
-STATIC mp_obj_t bp32_start(void) {
+static mp_obj_t bp32_start(void) {
     if (bp32_task_handle == NULL) {
         xTaskCreate(bluepad32_task, "bluepad32_task", 4096, NULL, 5, &bp32_task_handle);
         return mp_const_true;
     }
     return mp_const_false;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(bp32_start_obj, bp32_start);
+static MP_DEFINE_CONST_FUN_OBJ_0(bp32_start_obj, bp32_start);
 
 // Python: bluepad32.get_gamepad()
-STATIC mp_obj_t bp32_get_gamepad(void) {
+static mp_obj_t bp32_get_gamepad(void) {
     if (!is_connected) {
         return mp_const_none; // Return None if no controller is paired
     }
@@ -113,15 +113,15 @@ STATIC mp_obj_t bp32_get_gamepad(void) {
     tuple[5] = mp_obj_new_int(current_gamepad.axis_ry);
     return mp_obj_new_tuple(6, tuple);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(bp32_get_gamepad_obj, bp32_get_gamepad);
+static MP_DEFINE_CONST_FUN_OBJ_0(bp32_get_gamepad_obj, bp32_get_gamepad);
 
 // Register Module Dictionary
-STATIC const mp_rom_map_elem_t bluepad32_module_globals_table[] = {
+static const mp_rom_map_elem_t bluepad32_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_bluepad32) },
     { MP_ROM_QSTR(MP_QSTR_start), MP_ROM_PTR(&bp32_start_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_gamepad), MP_ROM_PTR(&bp32_get_gamepad_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(bluepad32_module_globals, bluepad32_module_globals_table);
+static MP_DEFINE_CONST_DICT(bluepad32_module_globals, bluepad32_module_globals_table);
 
 const mp_obj_module_t bluepad32_user_cmodule = {
     .base = { &mp_type_module },
