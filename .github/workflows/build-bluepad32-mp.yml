@@ -11,8 +11,9 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     
-    # Use the exact ESP-IDF version supported by MicroPython v1.23
-    container: espressif/idf:v5.0.4
+    # Bump to v5.2.2 to satisfy Bluepad32's modern component requirements (like esp_driver_gpio)
+    # MicroPython v1.23 officially supports v5.0.4, v5.1.4, v5.2.1, and v5.2.2
+    container: espressif/idf:v5.2.2
     
     steps:
       - name: Checkout Nscontrollerespmicro Source
