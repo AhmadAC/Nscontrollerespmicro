@@ -86,6 +86,7 @@ jobs:
           CONFIG_BT_STANDARD_HCI=y
           CONFIG_ESP32_WIFI_AMPDU_TX_ENABLED=n
           CONFIG_BT_BTU_TASK_STACK_SIZE=8192
+          CONFIG_BLUEPAD32_PLATFORM_CUSTOM=y
           EOF
           
           # 3. Force ESP-IDF to discover AND link Bluepad32 and BTStack
