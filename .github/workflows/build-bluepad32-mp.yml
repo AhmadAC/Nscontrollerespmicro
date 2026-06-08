@@ -11,8 +11,7 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     
-    # Bump to v5.2.2 to satisfy Bluepad32's modern component requirements (like esp_driver_gpio)
-    # MicroPython v1.23 officially supports v5.0.4, v5.1.4, v5.2.1, and v5.2.2
+    # MicroPython v1.23 officially supports ESP-IDF v5.2.2
     container: espressif/idf:v5.2.2
     
     steps:
@@ -33,6 +32,11 @@ jobs:
           repository: ricardoquesada/bluepad32
           path: bluepad32
           submodules: true
+
+      - name: Adapt Bluepad32 CMake for ESP-IDF v5.2 Compatibility
+        run: |
+          # Replace 'esp_driver_gpio' (introduced in ESP-IDF v5.3) with 'driver' for compatibility with v5.2.2
+          find bluepad32 -name "CMakeLists.txt" -type f -exec sed -i 's/esp_driver_gpio/driver/g' {} +
 
       - name: Fix BTStack Warnings & Inject Configuration
         run: |
