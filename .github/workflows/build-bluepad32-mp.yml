@@ -38,6 +38,10 @@ jobs:
         run: |
           # Replace 'esp_driver_gpio' (introduced in ESP-IDF v5.3) with 'driver' for compatibility with v5.0.4
           find bluepad32 -name "CMakeLists.txt" -type f -exec sed -i 's/esp_driver_gpio/driver/g' {} +
+          
+          # Force Kconfig choices to default to "custom" instead of "unijoysticle"
+          find bluepad32 -name "Kconfig" -type f -exec sed -i 's/default BLUEPAD32_PLATFORM_UNIJOYSTICLE/default BLUEPAD32_PLATFORM_CUSTOM/g' {} +
+          find bluepad32 -name "Kconfig" -type f -exec sed -i 's/default "unijoysticle"/default "custom"/g' {} +
 
       - name: Integrate BTStack into Bluepad32 Source Components
         run: |
@@ -87,6 +91,8 @@ jobs:
           CONFIG_ESP32_WIFI_AMPDU_TX_ENABLED=n
           CONFIG_BT_BTU_TASK_STACK_SIZE=8192
           CONFIG_BLUEPAD32_PLATFORM_CUSTOM=y
+          CONFIG_BLUEPAD32_PLATFORM_UNIJOYSTICLE=n
+          CONFIG_BLUEPAD32_PLATFORM="custom"
           EOF
           
           # 3. Force ESP-IDF to discover AND link Bluepad32 and BTStack
