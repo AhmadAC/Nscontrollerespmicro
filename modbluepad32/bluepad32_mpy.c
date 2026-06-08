@@ -35,27 +35,54 @@ static TaskHandle_t bp32_task_handle = NULL;
 
 #ifndef NO_QSTR
 // --- Bluepad32 Platform Callbacks ---
+
+// 1. init
+static void my_platform_init(int argc, const char** argv) {
+    (void)argc;
+    (void)argv;
+}
+
+// 2. on_init_complete
 static void my_platform_on_init_complete(void) {
     // Start scanning for controllers once Bluetooth boots up
     uni_bt_enable_new_connections_unsafe(true);
 }
 
+// 3. on_device_discovered
+static uni_error_t my_platform_on_device_discovered(bd_addr_t addr, const char* name, uint16_t cod, uint8_t rssi) {
+    (void)addr;
+    (void)name;
+    (void)cod;
+    (void)rssi;
+    return UNI_ERROR_SUCCESS;
+}
+
+// 4. on_device_connected
 static void my_platform_on_device_connected(uni_hid_device_t* d) {
     (void)d;
     is_connected = true;
 }
 
+// 5. on_device_disconnected
 static void my_platform_on_device_disconnected(uni_hid_device_t* d) {
     (void)d;
     is_connected = false;
     memset(&current_gamepad, 0, sizeof(current_gamepad));
 }
 
+// 6. on_device_ready
 static uni_error_t my_platform_on_device_ready(uni_hid_device_t* d) {
     (void)d;
     return UNI_ERROR_SUCCESS;
 }
 
+// 7. on_oob_event
+static void my_platform_on_oob_event(uni_platform_oob_event_t event, void* data) {
+    (void)event;
+    (void)data;
+}
+
+// 8. on_controller_data
 static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t* ctl) {
     (void)d;
     // Update global gamepad state when data arrives
@@ -64,25 +91,34 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     }
 }
 
-// Global struct to guarantee memory persistence across the entire lifecycle
-static struct uni_platform my_custom_platform = {0};
+// 9. get_property
+static const uni_property_t* my_platform_get_property(uni_property_idx_t idx) {
+    (void)idx;
+    return NULL;
+}
 
-// Register callbacks
+// Register callbacks using C99 designated initializers.
 static struct uni_platform* get_my_platform(void) {
-    my_custom_platform.name = "MicroPython";
-    my_custom_platform.on_init_complete = my_platform_on_init_complete;
-    my_custom_platform.on_device_connected = my_platform_on_device_connected;
-    my_custom_platform.on_device_disconnected = my_platform_on_device_disconnected;
-    my_custom_platform.on_device_ready = my_platform_on_device_ready;
-    my_custom_platform.on_controller_data = my_platform_on_controller_data;
-    return &my_custom_platform;
+    static struct uni_platform plat = {
+        .name = "MicroPython",
+        .init = my_platform_init,
+        .on_init_complete = my_platform_on_init_complete,
+        .on_device_discovered = my_platform_on_device_discovered,
+        .on_device_connected = my_platform_on_device_connected,
+        .on_device_disconnected = my_platform_on_device_disconnected,
+        .on_device_ready = my_platform_on_device_ready,
+        .on_oob_event = my_platform_on_oob_event,
+        .on_controller_data = my_platform_on_controller_data,
+        .get_property = my_platform_get_property,
+    };
+    return &plat;
 }
 
 // Background task to run Bluetooth quietly
 static void bluepad32_task(void *pvParameters) {
     (void)pvParameters;
     
-    // Register our custom platform callbacks
+    // Register our fully implemented platform callbacks
     uni_platform_set_custom(get_my_platform());
     
     // Initialize Bluepad32 (this configures the ESP32 BT hardware and calls btstack_init)
@@ -101,7 +137,7 @@ static void bluepad32_task(void *pvParameters) {
 static mp_obj_t bp32_start(void) {
 #ifndef NO_QSTR
     if (bp32_task_handle == NULL) {
-        // Increase stack size to 16KB to prevent Stack Overflows (which overwrite the return address causing PC=0x00000000 crashes)
+        // Increase stack size to 16KB to prevent Stack Overflows
         // Pin BTStack to Core 0 (PRO_CPU) to isolate it from MicroPython running on Core 1
         xTaskCreatePinnedToCore(bluepad32_task, "bluepad32_task", 16384, NULL, 5, &bp32_task_handle, 0);
         return mp_const_true;
