@@ -17,25 +17,24 @@ set(BLUEPAD32_INCLUDES
 # Optional 3rd-party BTStack Includes (added only if they exist to prevent CMake errors)
 set(BTSTACK_3RD_PARTY "$ENV{GITHUB_WORKSPACE}/bluepad32/external/btstack/3rd-party")
 
-if(EXISTS "${BTSTACK_3RD_PARTY}/bluedroid/encoder/include")
-    list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/bluedroid/encoder/include")
-endif()
+# List of all potential 3rd-party directories that btstack.h might reference
+set(OPTIONAL_DIRS
+    "bluedroid/encoder/include"
+    "bluedroid/decoder/include"
+    "micro-ecc"
+    "hxcmod-player"
+    "hxcmod-player/mod"
+    "yxml"
+    "mdns"
+    "rijndael"
+    "tinydir"
+)
 
-if(EXISTS "${BTSTACK_3RD_PARTY}/bluedroid/decoder/include")
-    list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/bluedroid/decoder/include")
-endif()
-
-if(EXISTS "${BTSTACK_3RD_PARTY}/micro-ecc")
-    list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/micro-ecc")
-endif()
-
-if(EXISTS "${BTSTACK_3RD_PARTY}/hxcmod-player")
-    list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/hxcmod-player")
-endif()
-
-if(EXISTS "${BTSTACK_3RD_PARTY}/hxcmod-player/mod")
-    list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/hxcmod-player/mod")
-endif()
+foreach(dir ${OPTIONAL_DIRS})
+    if(EXISTS "${BTSTACK_3RD_PARTY}/${dir}")
+        list(APPEND BLUEPAD32_INCLUDES "${BTSTACK_3RD_PARTY}/${dir}")
+    endif()
+endforeach()
 
 # Explicitly apply the valid include directories to the module
 target_include_directories(usermod_bluepad32 INTERFACE ${BLUEPAD32_INCLUDES})
