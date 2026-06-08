@@ -24,14 +24,14 @@ jobs:
           repository: micropython/micropython
           ref: v1.23.0
           path: micropython
-          submodules: true
+          submodules: recursive
 
       - name: Checkout Bluepad32 Library
         uses: actions/checkout@v4
         with:
           repository: ricardoquesada/bluepad32
           path: bluepad32
-          submodules: true
+          submodules: recursive # CRITICAL: BTStack contains nested submodules in its 3rd-party/ directory
 
       - name: Adapt Bluepad32 CMake for ESP-IDF v5.2 Compatibility
         run: |
