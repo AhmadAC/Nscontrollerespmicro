@@ -92,7 +92,7 @@ jobs:
           CONFIG_BT_CONTROLLER_ONLY=y
           CONFIG_BT_STANDARD_HCI=y
           
-          # CRITICAL FIX: Force compile Bluetooth Dual Mode so esp_bt_controller_enable does not reject the command (Error 258)
+          # Ensure Bluetooth Dual Mode is compiled into the firmware
           CONFIG_BT_CLASSIC_ENABLED=y
           CONFIG_BT_BLE_ENABLED=y
           CONFIG_BT_CTRL_MODE_BTDM=y

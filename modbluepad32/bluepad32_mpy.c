@@ -130,34 +130,20 @@ static void bluepad32_task(void *pvParameters) {
         nvs_flash_init();
     }
     
-    // 2. Turn on the physical ESP32 Bluetooth Controller
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret = esp_bt_controller_init(&bt_cfg);
-    if (ret != ESP_OK) {
-        printf("Bluepad32 Error: esp_bt_controller_init failed: %d\n", ret);
-        vTaskDelete(NULL);
-        return;
-    }
-    
-    // Fix for Error 258: Use bt_cfg.mode automatically assigned by the ESP-IDF compiler config
-    ret = esp_bt_controller_enable(bt_cfg.mode);
-    if (ret != ESP_OK) {
-        printf("Bluepad32 Error: esp_bt_controller_enable failed: %d\n", ret);
-        vTaskDelete(NULL);
-        return;
-    }
-
-    printf("Bluepad32: ESP32 Hardware Bluetooth Controller enabled successfully.\n");
+    // 2. Configure BTstack for ESP32 VHCI Controller
+    // CRITICAL FIX: This safely handles both hardware power-on AND internal BTStack linking.
+    btstack_init();
 
     // 3. Register our fully implemented platform callbacks
+    // IMPORTANT: Must be called AFTER btstack_init but BEFORE uni_init
     uni_platform_set_custom(get_my_platform());
     
-    // 4. Initialize Bluepad32 (this configures BTStack and the Gamepad parsing engine)
+    // 4. Initialize Bluepad32 (this configures the Gamepad parsing engine)
     uni_init(0, NULL);
     
     printf("Bluepad32: Engine initialized. Handing over to BTStack run loop...\n");
 
-    // 5. Hand over this thread to the BTStack run loop (loops forever handling VHCI events)
+    // 5. Hand over this thread to the BTStack run loop (loops forever handling controller events)
     btstack_run_loop_execute();
     
     vTaskDelete(NULL);
