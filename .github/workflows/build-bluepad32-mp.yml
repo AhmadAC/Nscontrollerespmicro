@@ -93,6 +93,11 @@ jobs:
           CONFIG_BLUEPAD32_PLATFORM_CUSTOM=y
           CONFIG_BLUEPAD32_PLATFORM_UNIJOYSTICLE=n
           CONFIG_BLUEPAD32_PLATFORM="custom"
+          
+          # CRITICAL: Enable Wi-Fi/Bluetooth Coexistence to prevent LoadProhibited Core 0 PHY panic!
+          CONFIG_ESP_WIFI_SW_COEXIST_ENABLE=y
+          CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y
+          CONFIG_ESP_COEX_WIFI_BT=y
           EOF
           
           # 3. Force ESP-IDF to discover AND link Bluepad32 and BTStack
