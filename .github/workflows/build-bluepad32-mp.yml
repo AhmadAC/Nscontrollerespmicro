@@ -1,4 +1,3 @@
-# .github\workflows\build-bluepad32-mp.yml
 name: Build Bluepad32 MicroPython Firmware
 
 on:

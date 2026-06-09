@@ -8,6 +8,9 @@
 #ifndef NO_QSTR
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_bt.h"
+#include "nvs_flash.h"
+#include "esp_err.h"
 
 // Bluepad32 headers
 #include "uni.h"
@@ -118,13 +121,43 @@ static struct uni_platform* get_my_platform(void) {
 static void bluepad32_task(void *pvParameters) {
     (void)pvParameters;
     
-    // Register our fully implemented platform callbacks
+    printf("Bluepad32: Task started. Initializing ESP32 Bluetooth hardware...\n");
+
+    // 1. Initialize NVS (The Bluetooth controller requires NVS to be active)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        nvs_flash_init();
+    }
+    
+    // 2. Turn on the physical ESP32 Bluetooth Controller (Dual Mode)
+    // If we skip this step, Bluepad32 tries to write to dead memory and triggers Core 0 Panic (0x24)
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    ret = esp_bt_controller_init(&bt_cfg);
+    if (ret != ESP_OK) {
+        printf("Bluepad32 Error: esp_bt_controller_init failed: %d\n", ret);
+        vTaskDelete(NULL);
+        return;
+    }
+    
+    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+    if (ret != ESP_OK) {
+        printf("Bluepad32 Error: esp_bt_controller_enable failed: %d\n", ret);
+        vTaskDelete(NULL);
+        return;
+    }
+
+    printf("Bluepad32: ESP32 Hardware Bluetooth Controller enabled successfully.\n");
+
+    // 3. Register our fully implemented platform callbacks
     uni_platform_set_custom(get_my_platform());
     
-    // Initialize Bluepad32 (this configures the ESP32 BT hardware and calls btstack_init)
+    // 4. Initialize Bluepad32 (this configures BTStack and the Gamepad parsing engine)
     uni_init(0, NULL);
     
-    // Hand over this thread to the BTStack run loop (loops forever)
+    printf("Bluepad32: Engine initialized. Handing over to BTStack run loop...\n");
+
+    // 5. Hand over this thread to the BTStack run loop (loops forever handling VHCI events)
     btstack_run_loop_execute();
     
     vTaskDelete(NULL);
