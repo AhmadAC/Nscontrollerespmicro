@@ -1,3 +1,4 @@
+# .github\workflows\build-bluepad32-mp.yml
 name: Build Bluepad32 MicroPython Firmware
 
 on:
@@ -80,6 +81,11 @@ jobs:
           echo "#undef MICROPY_PY_BLUETOOTH" >> micropython/ports/esp32/boards/ESP32_GENERIC/mpconfigboard.h
           echo "#define MICROPY_PY_BLUETOOTH (0)" >> micropython/ports/esp32/boards/ESP32_GENERIC/mpconfigboard.h
           
+          # CRITICAL FIX: Prevent MicroPython from releasing the BT controller memory!
+          # Since NimBLE/Bluedroid are disabled, MicroPython's boot sequence calls esp_bt_controller_mem_release()
+          # which physically unmaps the BT hardware, causing a Core 0 LoadProhibited panic when Bluepad32 starts.
+          find micropython/ports/esp32 -name "*.c" -exec sed -i 's/esp_bt_controller_mem_release/\/\/esp_bt_controller_mem_release/g' {} +
+          
           # 2. Inject Bluepad32 / BTStack config requirements
           cat <<EOF >> micropython/ports/esp32/boards/ESP32_GENERIC/sdkconfig.board
           
@@ -94,7 +100,7 @@ jobs:
           CONFIG_BLUEPAD32_PLATFORM_UNIJOYSTICLE=n
           CONFIG_BLUEPAD32_PLATFORM="custom"
           
-          # CRITICAL: Enable Wi-Fi/Bluetooth Coexistence to prevent LoadProhibited Core 0 PHY panic!
+          # Enable Wi-Fi/Bluetooth Coexistence to prevent PHY panics when both are active
           CONFIG_ESP_WIFI_SW_COEXIST_ENABLE=y
           CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y
           CONFIG_ESP_COEX_WIFI_BT=y
