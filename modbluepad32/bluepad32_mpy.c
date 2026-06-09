@@ -130,8 +130,7 @@ static void bluepad32_task(void *pvParameters) {
         nvs_flash_init();
     }
     
-    // 2. Turn on the physical ESP32 Bluetooth Controller (Dual Mode)
-    // If we skip this step, Bluepad32 tries to write to dead memory and triggers Core 0 Panic (0x24)
+    // 2. Turn on the physical ESP32 Bluetooth Controller
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ret = esp_bt_controller_init(&bt_cfg);
     if (ret != ESP_OK) {
@@ -140,7 +139,8 @@ static void bluepad32_task(void *pvParameters) {
         return;
     }
     
-    ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
+    // Fix for Error 258: Use bt_cfg.mode automatically assigned by the ESP-IDF compiler config
+    ret = esp_bt_controller_enable(bt_cfg.mode);
     if (ret != ESP_OK) {
         printf("Bluepad32 Error: esp_bt_controller_enable failed: %d\n", ret);
         vTaskDelete(NULL);
