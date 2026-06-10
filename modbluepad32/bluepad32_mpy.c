@@ -94,9 +94,39 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     }
 }
 
-// 9. get_property
+// 9. get_property - Configured to return valid property structures, silencing console warnings
 static const uni_property_t* my_platform_get_property(uni_property_idx_t idx) {
-    (void)idx;
+    static const uni_property_t props[] = {
+        // Global: Virtual Device enabled
+        {
+            .idx = UNI_PROPERTY_IDX_VIRTUAL_DEVICE_ENABLED,
+            .name = UNI_PROPERTY_NAME_VIRTUAL_DEVICE_ENABLED,
+            .type = UNI_PROPERTY_TYPE_BOOL,
+            .default_value.boolean = false,
+            .flags = 0,
+        },
+        // Unijoysticle thresholds (safely answers index 11 lookups)
+        {
+            .idx = UNI_PROPERTY_IDX_UNI_BB_FIRE_THRESHOLD,
+            .name = "uni.bb.fire_threshold",
+            .type = UNI_PROPERTY_TYPE_U8,
+            .default_value.u8 = 32,
+            .flags = 0,
+        },
+        // Unijoysticle thresholds (safely answers index 12 lookups)
+        {
+            .idx = UNI_PROPERTY_IDX_UNI_BB_MOVE_THRESHOLD,
+            .name = "uni.bb.move_threshold",
+            .type = UNI_PROPERTY_TYPE_U8,
+            .default_value.u8 = 32,
+            .flags = 0,
+        }
+    };
+    for (size_t i = 0; i < sizeof(props) / sizeof(props[0]); i++) {
+        if (props[i].idx == idx) {
+            return &props[i];
+        }
+    }
     return NULL;
 }
 
